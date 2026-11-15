@@ -46,6 +46,16 @@ cd android
 > O build de release usa a chave de debug por padrão (veja `android/app/build.gradle`).
 > Para uso pessoal isso basta; para publicar na Play Store, gere sua própria chave.
 
+Ou gerar o APK na nuvem pelo EAS (sem Android Studio; a chave fica guardada no EAS):
+
+```bash
+npx eas-cli@latest build -p android --profile preview
+# no fim sai o link do APK
+```
+
+> O `eas.json` fixa `"image": "latest"`: sem o pacote `expo`, o EAS cairia numa imagem
+> antiga (JDK 11 / Node 18) que não compila o React Native 0.88.
+
 ## Importante: o que ele bloqueia e o que não bloqueia
 
 **Bloqueia bem:** anúncios de redes como Google AdMob/DoubleClick, Facebook Audience Network,

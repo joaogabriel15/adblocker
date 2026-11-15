@@ -1,4 +1,9 @@
 {
   "name": "AdBlocker",
-  "displayName": "AdBlocker"
+  "displayName": "AdBlocker",
+  "extra": {
+    "eas": {
+      "projectId": "8215e605-61c5-4fae-b172-8ad1c6a6f300"
+    }
+  }
 }
