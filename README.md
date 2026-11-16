@@ -1,5 +1,7 @@
 # Bloqueador de Anúncios (React Native, Android)
 
+**Português** · [English](README.en.md)
+
 App que bloqueia anúncios e rastreadores **em todos os apps do celular**, sem root.
 
 ## Baixar
