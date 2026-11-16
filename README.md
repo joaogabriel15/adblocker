@@ -4,6 +4,12 @@
 
 App que bloqueia anúncios e rastreadores **em todos os apps do celular**, sem root.
 
+<p align="center">
+  <img src="docs/prints/01-desligado.png" alt="App desligado" width="240" />
+  <img src="docs/prints/02-protegido.png" alt="App ligado, com domínios de anúncio bloqueados" width="240" />
+  <img src="docs/prints/03-liberados.png" alt="Aba de domínios liberados" width="240" />
+</p>
+
 ## Baixar
 
 **[⬇ Baixar o APK (última versão)](https://github.com/joaogabriel15/adblocker/releases/latest/download/adblocker.apk)**,

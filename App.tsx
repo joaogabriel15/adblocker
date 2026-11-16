@@ -120,22 +120,31 @@ function Home() {
     <SafeAreaView style={styles.screen}>
       <Text style={styles.title}>Bloqueador de Anúncios</Text>
 
-      <Pressable
-        onPress={toggle}
-        disabled={busy}
-        style={[styles.power, stats.running ? styles.on : styles.off]}
-      >
-        {busy ? (
-          <ActivityIndicator color="#fff" size="large" />
-        ) : (
-          <>
-            <Text style={styles.powerIcon}>⏻</Text>
-            <Text style={styles.powerText}>
-              {stats.running ? 'PROTEGIDO' : 'DESLIGADO'}
-            </Text>
-          </>
-        )}
-      </Pressable>
+      <View style={[styles.halo, stats.running ? styles.haloOn : styles.haloOff]}>
+        <Pressable
+          onPress={toggle}
+          disabled={busy}
+          accessibilityRole="switch"
+          accessibilityState={{ checked: stats.running, busy }}
+          accessibilityLabel="Bloqueio de anúncios"
+          style={({ pressed }) => [
+            styles.power,
+            stats.running ? styles.on : styles.off,
+            pressed && styles.pressed,
+          ]}
+        >
+          {busy ? (
+            <ActivityIndicator color="#fff" size="large" />
+          ) : (
+            <>
+              <PowerIcon />
+              <Text style={styles.powerText}>
+                {stats.running ? 'PROTEGIDO' : 'DESLIGADO'}
+              </Text>
+            </>
+          )}
+        </Pressable>
+      </View>
       <Text style={styles.muted}>
         {stats.running
           ? 'Anúncios estão sendo bloqueados em todos os apps.'
@@ -196,6 +205,15 @@ function Home() {
   );
 }
 
+function PowerIcon() {
+  return (
+    <View style={styles.powerGlyph}>
+      <View style={styles.powerRing} />
+      <View style={styles.powerBar} />
+    </View>
+  );
+}
+
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.stat}>
@@ -227,23 +245,47 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
   },
-  power: {
+  halo: {
     alignSelf: 'center',
+    padding: 10,
+    borderRadius: 105,
+    marginBottom: 12,
+  },
+  haloOn: { backgroundColor: 'rgba(22, 163, 74, 0.18)' },
+  haloOff: { backgroundColor: 'rgba(71, 85, 105, 0.18)' },
+  power: {
     width: 170,
     height: 170,
     borderRadius: 85,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
     elevation: 8,
   },
   on: { backgroundColor: '#16a34a' },
   off: { backgroundColor: '#475569' },
-  powerIcon: { color: '#fff', fontSize: 56 },
+  pressed: { transform: [{ scale: 0.96 }] },
+  // Ícone de energia desenhado com Views: o glifo ⏻ não existe na fonte padrão de muitos Androids.
+  powerGlyph: { width: 56, height: 56, alignItems: 'center' },
+  powerRing: {
+    position: 'absolute',
+    top: 4,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 6,
+    borderColor: '#fff',
+    borderTopColor: 'transparent',
+  },
+  powerBar: {
+    width: 6,
+    height: 30,
+    borderRadius: 3,
+    backgroundColor: '#fff',
+  },
   powerText: {
     color: '#fff',
     fontWeight: '700',
-    marginTop: 4,
+    marginTop: 8,
     letterSpacing: 1,
   },
   muted: { color: '#94a3b8', textAlign: 'center', marginVertical: 8 },
