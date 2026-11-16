@@ -2,6 +2,27 @@
 
 App que bloqueia anúncios e rastreadores **em todos os apps do celular**, sem root.
 
+## Baixar
+
+**[⬇ Baixar o APK (última versão)](https://github.com/joaogabriel15/adblocker/releases/latest/download/adblocker.apk)**,
+ou veja todas as versões em [Releases](https://github.com/joaogabriel15/adblocker/releases).
+
+Para instalar no Android:
+
+1. Abra o link no celular e baixe o `adblocker.apk`.
+2. Ao abrir o arquivo, o Android pede para **permitir instalar apps desta fonte** (navegador ou
+   gerenciador de arquivos). Permita.
+3. O **Play Protect** pode avisar que o app é desconhecido, porque ele não está na Play Store.
+   Toque em "Mais detalhes" > "Instalar mesmo assim".
+4. Abra o app e ligue o bloqueio. O Android pergunta se aceita a conexão VPN: aceite.
+
+Versões novas instalam por cima da anterior, sem perder os domínios liberados.
+
+> **Privacidade:** a VPN só enxerga as consultas de DNS (nomes de sites), e elas não saem do
+> celular, a não ser para o DNS público (1.1.1.1 / 8.8.8.8). O app não tem servidor, conta
+> nem coleta de dados; a única conexão própria é o download da lista no GitHub, quando você
+> toca em "Atualizar lista". O código está todo aqui. Baixe o APK só desta página de Releases.
+
 ## Como funciona
 
 O app cria uma **VPN local** (nada sai do seu celular por ela). Essa VPN só captura
@@ -56,6 +77,20 @@ npx eas-cli@latest build -p android --profile preview
 > O `eas.json` fixa `"image": "latest"`: sem o pacote `expo`, o EAS cairia numa imagem
 > antiga (JDK 11 / Node 18) que não compila o React Native 0.88.
 
+### Publicar uma versão nova
+
+1. Suba `versionCode` (+1) e `versionName` em `android/app/build.gradle`.
+2. Gere o APK no EAS (comando acima) e baixe-o como `adblocker.apk`.
+3. Crie a release com o APK anexado (o nome `adblocker.apk` mantém o link "Baixar" do topo):
+
+```bash
+gh release create v1.0.1 adblocker.apk --title "v1.0.1" --notes "O que mudou"
+```
+
+> Sempre gere pelo EAS: a chave que assina o APK fica guardada lá. Um APK assinado com outra
+> chave não instala por cima da versão anterior. Guarde um backup da chave fora do repositório
+> (`npx eas-cli@latest credentials -p android` > Keystore > Download).
+
 ## Importante: o que ele bloqueia e o que não bloqueia
 
 **Bloqueia bem:** anúncios de redes como Google AdMob/DoubleClick, Facebook Audience Network,
@@ -86,3 +121,8 @@ android/app/src/main/java/com/adblocker/vpn/
   AdBlockPackage.kt             Registro do módulo
 android/app/src/main/assets/hosts_basic.txt   Lista embutida
 ```
+
+## Licença
+
+[MIT](LICENSE). A lista de bloqueio embutida é a [StevenBlack/hosts](https://github.com/StevenBlack/hosts),
+também MIT, e mantém o cabeçalho original em `android/app/src/main/assets/hosts_basic.txt`.
