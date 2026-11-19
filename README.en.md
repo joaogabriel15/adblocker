@@ -2,7 +2,7 @@
 
 [Português](README.md) · **English**
 
-An app that blocks ads and trackers **in every app on your phone**, no root required.
+An app that blocks ads and trackers **in every app on your phone and Android TV**, no root required.
 
 The app's interface is in Portuguese; this guide shows each Portuguese label followed by its English meaning.
 
@@ -26,6 +26,29 @@ New versions install over the previous one without losing your allowed domains.
 > phone except to the public DNS (1.1.1.1 / 8.8.8.8). The app has no server, account
 > or data collection; its only own connection is downloading the list from GitHub, when you
 > tap "Atualizar lista" (Update list). All the code is here. Only download the APK from this Releases page.
+
+## Installing on Android TV / Google TV (without the store)
+
+The app also works on **Android TV / Google TV** devices. It shows up on the TV home screen and
+can be used with the remote only. Since it is not on the Play Store, sideload the APK:
+
+1. **Downloader app (easiest):** install *Downloader* (by AFTVnews) from the TV's Play Store,
+   allow it under Settings > Privacy/Security > **Unknown sources**, then open
+   `https://github.com/joaogabriel15/adblocker/releases/latest/download/adblocker.apk` (or the
+   APK link EAS prints) and install.
+2. **USB drive:** copy `adblocker.apk` to a USB drive and open it with a file manager on the TV
+   (allow unknown sources for the file manager).
+3. **Send Files to TV:** send the APK from your phone over Wi-Fi.
+4. **ADB over the network:** enable developer mode (click "Build" 7 times), turn on network/USB
+   debugging, then `adb connect <TV-IP>` and `adb install -r adblocker.apk`.
+
+**Expo Go does not work** (the app has its own native VPN module, and there is no Expo Go for
+TV), but an **EAS Build** APK does: run `npx eas-cli@latest build -p android --profile preview`
+and open the resulting link in Downloader.
+
+On the TV, press **OK** on the highlighted power button and accept the VPN prompt. If the TV
+says it has no VPN permission screen, run once from a computer:
+`adb shell appops set com.adblocker ACTIVATE_VPN allow`.
 
 ## How it works
 

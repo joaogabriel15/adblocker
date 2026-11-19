@@ -1,6 +1,7 @@
 package com.adblocker.vpn
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.VpnService
 import com.facebook.react.bridge.ActivityEventListener
@@ -37,7 +38,19 @@ class AdBlockModule(private val ctx: ReactApplicationContext) :
             return
         }
         pendingStart = promise
-        activity.startActivityForResult(consent, requestCode)
+        try {
+            activity.startActivityForResult(consent, requestCode)
+        } catch (e: ActivityNotFoundException) {
+            // Algumas TVs (ex.: firmwares de fabricante) não trazem a tela de permissão de VPN.
+            pendingStart = null
+            promise.reject(
+                "VPN_DIALOG_MISSING",
+                "Este aparelho não tem a tela de permissão de VPN. Pelo computador, rode:\n" +
+                    "adb shell appops set ${ctx.packageName} ACTIVATE_VPN allow\n" +
+                    "e tente ligar de novo.",
+                e,
+            )
+        }
     }
 
     @ReactMethod
