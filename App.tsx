@@ -3,14 +3,22 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Platform,
   Pressable,
+  PressableProps,
   StatusBar,
+  StyleProp,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
+  ViewStyle,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { AdBlock, isSupported, Stats } from './src/AdBlock';
+
+// Android TV / Google TV: navegação pelo controle remoto (D-pad) em vez de toque.
+const isTV = Platform.isTV;
 
 const EMPTY: Stats = {
   running: false,
@@ -34,6 +42,9 @@ function Home() {
   const [stats, setStats] = useState<Stats>(EMPTY);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<'recent' | 'allowed'>('recent');
+  const { width, height } = useWindowDimensions();
+  // Em TV (ou tablet deitado) a tela é larga: controles à esquerda, lista à direita.
+  const wide = isTV || (width > height && width >= 700);
 
   const refresh = useCallback(async () => {
     if (!isSupported) return;
@@ -117,90 +128,107 @@ function Home() {
   const pct = stats.total ? Math.round((stats.blocked / stats.total) * 100) : 0;
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={[styles.screen, isTV && styles.screenTV]}>
       <Text style={styles.title}>Bloqueador de Anúncios</Text>
-
-      <View style={[styles.halo, stats.running ? styles.haloOn : styles.haloOff]}>
-        <Pressable
-          onPress={toggle}
-          disabled={busy}
-          accessibilityRole="switch"
-          accessibilityState={{ checked: stats.running, busy }}
-          accessibilityLabel="Bloqueio de anúncios"
-          style={({ pressed }) => [
-            styles.power,
-            stats.running ? styles.on : styles.off,
-            pressed && styles.pressed,
-          ]}
-        >
-          {busy ? (
-            <ActivityIndicator color="#fff" size="large" />
-          ) : (
-            <>
-              <PowerIcon />
-              <Text style={styles.powerText}>
-                {stats.running ? 'PROTEGIDO' : 'DESLIGADO'}
-              </Text>
-            </>
-          )}
-        </Pressable>
-      </View>
-      <Text style={styles.muted}>
-        {stats.running
-          ? 'Anúncios estão sendo bloqueados em todos os apps.'
-          : 'Toque para começar a bloquear anúncios.'}
-      </Text>
-
-      <View style={styles.row}>
-        <Stat
-          label="Bloqueados"
-          value={stats.blocked.toLocaleString('pt-BR')}
-        />
-        <Stat label="Consultas" value={stats.total.toLocaleString('pt-BR')} />
-        <Stat label="Bloqueio" value={`${pct}%`} />
-      </View>
-
-      <Pressable onPress={updateList} disabled={busy} style={styles.button}>
-        <Text style={styles.buttonText}>
-          Atualizar lista ({stats.listSize.toLocaleString('pt-BR')} domínios)
-        </Text>
-      </Pressable>
-
-      <View style={styles.tabs}>
-        <Tab
-          label="Bloqueados agora"
-          active={tab === 'recent'}
-          onPress={() => setTab('recent')}
-        />
-        <Tab
-          label={`Liberados (${stats.allowed.length})`}
-          active={tab === 'allowed'}
-          onPress={() => setTab('allowed')}
-        />
-      </View>
-      <FlatList
-        style={styles.list}
-        data={list}
-        keyExtractor={(item, i) => `${item}-${i}`}
-        ListEmptyComponent={
-          <Text style={styles.muted}>
-            {tab === 'recent'
-              ? 'Nada bloqueado ainda. Abra algum app com anúncios.'
-              : 'Toque num domínio bloqueado para liberá-lo.'}
-          </Text>
-        }
-        renderItem={({ item }) => (
-          <Pressable
-            onPress={() => (tab === 'recent' ? askAllow(item) : askBlock(item))}
-            style={styles.item}
+      <View style={wide ? styles.columns : styles.flex}>
+        <View style={wide ? styles.left : undefined}>
+          <View
+            style={[
+              styles.halo,
+              stats.running ? styles.haloOn : styles.haloOff,
+            ]}
           >
-            <Text style={styles.itemText} numberOfLines={1}>
-              {tab === 'recent' ? '🚫 ' : '✅ '}
-              {item}
+            <Focusable
+              onPress={toggle}
+              disabled={busy}
+              hasTVPreferredFocus
+              accessibilityRole="switch"
+              accessibilityState={{ checked: stats.running, busy }}
+              accessibilityLabel="Bloqueio de anúncios"
+              style={[styles.power, stats.running ? styles.on : styles.off]}
+              focusedStyle={styles.powerFocused}
+            >
+              {busy ? (
+                <ActivityIndicator color="#fff" size="large" />
+              ) : (
+                <>
+                  <PowerIcon />
+                  <Text style={styles.powerText}>
+                    {stats.running ? 'PROTEGIDO' : 'DESLIGADO'}
+                  </Text>
+                </>
+              )}
+            </Focusable>
+          </View>
+          <Text style={styles.muted}>
+            {stats.running
+              ? 'Anúncios estão sendo bloqueados em todos os apps.'
+              : isTV
+              ? 'Aperte OK no controle para começar a bloquear anúncios.'
+              : 'Toque para começar a bloquear anúncios.'}
+          </Text>
+
+          <View style={styles.row}>
+            <Stat
+              label="Bloqueados"
+              value={stats.blocked.toLocaleString('pt-BR')}
+            />
+            <Stat
+              label="Consultas"
+              value={stats.total.toLocaleString('pt-BR')}
+            />
+            <Stat label="Bloqueio" value={`${pct}%`} />
+          </View>
+
+          <Focusable onPress={updateList} disabled={busy} style={styles.button}>
+            <Text style={styles.buttonText}>
+              Atualizar lista ({stats.listSize.toLocaleString('pt-BR')}{' '}
+              domínios)
             </Text>
-          </Pressable>
-        )}
-      />
+          </Focusable>
+        </View>
+
+        <View style={styles.flex}>
+          <View style={[styles.tabs, wide && styles.tabsWide]}>
+            <Tab
+              label="Bloqueados agora"
+              active={tab === 'recent'}
+              onPress={() => setTab('recent')}
+            />
+            <Tab
+              label={`Liberados (${stats.allowed.length})`}
+              active={tab === 'allowed'}
+              onPress={() => setTab('allowed')}
+            />
+          </View>
+          <FlatList
+            style={styles.list}
+            data={list}
+            keyExtractor={(item, i) => `${item}-${i}`}
+            ListEmptyComponent={
+              <Text style={styles.muted}>
+                {tab === 'recent'
+                  ? 'Nada bloqueado ainda. Abra algum app com anúncios.'
+                  : 'Toque num domínio bloqueado para liberá-lo.'}
+              </Text>
+            }
+            renderItem={({ item }) => (
+              <Focusable
+                onPress={() =>
+                  tab === 'recent' ? askAllow(item) : askBlock(item)
+                }
+                style={styles.item}
+                focusedStyle={styles.itemFocused}
+              >
+                <Text style={styles.itemText} numberOfLines={1}>
+                  {tab === 'recent' ? '🚫 ' : '✅ '}
+                  {item}
+                </Text>
+              </Focusable>
+            )}
+          />
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -225,19 +253,65 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function Tab(props: { label: string; active: boolean; onPress: () => void }) {
   return (
-    <Pressable
+    <Focusable
       onPress={props.onPress}
+      // No controle remoto, só passar o foco pela aba já troca a lista.
+      onFocus={isTV ? props.onPress : undefined}
       style={[styles.tab, props.active && styles.tabActive]}
     >
       <Text style={[styles.tabText, props.active && styles.tabTextActive]}>
         {props.label}
       </Text>
-    </Pressable>
+    </Focusable>
+  );
+}
+
+type FocusableProps = Omit<PressableProps, 'style'> & {
+  style?: StyleProp<ViewStyle>;
+  focusedStyle?: StyleProp<ViewStyle>;
+  hasTVPreferredFocus?: boolean;
+};
+
+/**
+ * Pressable que mostra onde está o foco do controle remoto (D-pad).
+ * No celular, com toque, se comporta como um Pressable comum.
+ */
+function Focusable({
+  style,
+  focusedStyle,
+  onFocus,
+  onBlur,
+  ...rest
+}: FocusableProps) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <Pressable
+      focusable
+      {...rest}
+      onFocus={e => {
+        setFocused(true);
+        onFocus?.(e);
+      }}
+      onBlur={e => {
+        setFocused(false);
+        onBlur?.(e);
+      }}
+      style={({ pressed }) => [
+        style,
+        focused && (focusedStyle ?? styles.focused),
+        pressed && styles.pressed,
+      ]}
+    />
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#0f172a', padding: 20 },
+  // Margem de segurança: muitas TVs cortam as bordas da imagem (overscan).
+  screenTV: { paddingHorizontal: 48, paddingVertical: 27 },
+  flex: { flex: 1 },
+  columns: { flex: 1, flexDirection: 'row', gap: 32 },
+  left: { width: 380, justifyContent: 'center' },
   title: {
     color: '#fff',
     fontSize: 24,
@@ -264,6 +338,18 @@ const styles = StyleSheet.create({
   on: { backgroundColor: '#16a34a' },
   off: { backgroundColor: '#475569' },
   pressed: { transform: [{ scale: 0.96 }] },
+  // Destaque do item com foco do controle remoto.
+  focused: {
+    borderWidth: 3,
+    borderColor: '#facc15',
+    transform: [{ scale: 1.04 }],
+  },
+  powerFocused: {
+    borderWidth: 5,
+    borderColor: '#facc15',
+    transform: [{ scale: 1.06 }],
+  },
+  itemFocused: { backgroundColor: '#1e3a8a', borderRadius: 6 },
   // Ícone de energia desenhado com Views: o glifo ⏻ não existe na fonte padrão de muitos Androids.
   powerGlyph: { width: 56, height: 56, alignItems: 'center' },
   powerRing: {
@@ -307,6 +393,7 @@ const styles = StyleSheet.create({
   },
   buttonText: { color: '#fff', fontWeight: '600' },
   tabs: { flexDirection: 'row', marginTop: 20, marginBottom: 8 },
+  tabsWide: { marginTop: 0 },
   tab: {
     flex: 1,
     paddingVertical: 8,
@@ -319,6 +406,7 @@ const styles = StyleSheet.create({
   list: { flex: 1 },
   item: {
     paddingVertical: 10,
+    paddingHorizontal: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: '#334155',
   },
