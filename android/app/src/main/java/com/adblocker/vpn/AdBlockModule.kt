@@ -94,7 +94,7 @@ class AdBlockModule(private val ctx: ReactApplicationContext) :
     }
 
     private fun launchService() {
-        ctx.startService(Intent(ctx, AdBlockVpnService::class.java).setAction(AdBlockVpnService.ACTION_START))
+        AdBlockVpnService.start(ctx)
     }
 
     override fun onActivityResult(activity: Activity, requestCode: Int, resultCode: Int, data: Intent?) {

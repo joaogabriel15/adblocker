@@ -102,11 +102,37 @@ encurte-o (ex.: bit.ly) ou use o código numérico do próprio Downloader (aftv.
   computador (jeito 4), rode uma vez e depois ligue de novo no app:
   `adb shell appops set com.adblocker ACTIVATE_VPN allow`
 - **Não aparece na tela inicial**: procure em Configurações > Apps, ou em "Seus apps".
-- **Desliga sozinho depois de reiniciar a TV**: se a TV tiver Configurações > Rede > VPN, ative
-  "VPN sempre ativa" para o app. Senão, abra o app e ligue de novo após reiniciar.
+- **Não religou depois de ligar a TV**: veja "Sempre ativo em segundo plano" abaixo. Algumas
+  marcas (ex.: Fire TV e TVs com "início rápido" desligado) bloqueiam apps de abrir sozinhos no
+  boot; nesse caso use a "VPN sempre ativa" pelo ADB.
 - **DNS privado / DNS seguro**: assim como no celular, desative se a TV tiver essa opção.
 - Anúncios do app do **YouTube** continuam aparecendo (veja a seção "Importante" abaixo); já os
   de muitos apps de canais, IPTV e jogos são bloqueados.
+
+## Sempre ativo em segundo plano
+
+Você só precisa ligar o bloqueio **uma vez**. Depois disso:
+
+- Ele continua rodando em segundo plano mesmo com o app fechado ou com outro app aberto
+  (é um serviço em primeiro plano, e o Android não o fecha para liberar memória). No celular
+  aparece uma notificação discreta "Bloqueador de Anúncios ativo".
+- Quando o celular ou a TV **liga de novo**, o app religa o bloqueio sozinho, desde que ele
+  estivesse ligado. Também religa depois de instalar uma versão nova.
+- Ele só fica desligado se você desligar no app, pela tela de VPN do Android, ou se outro app de
+  VPN assumir.
+
+Para garantir ainda mais (o Android religa a VPN mesmo se o app for fechado à força), ative a
+**VPN sempre ativa**:
+
+- **Celular:** Configurações > Rede e Internet > VPN > ⚙️ ao lado de "AdBlocker" > **VPN sempre ativa**.
+- **TV:** muitas TVs não mostram essa tela. Pelo computador (jeito 4 acima), rode:
+
+```bash
+adb shell settings put secure always_on_vpn_app com.adblocker
+adb shell settings put secure always_on_vpn_lockdown 0   # 0 = não corta a internet se a VPN cair
+```
+
+Para desfazer: `adb shell settings delete secure always_on_vpn_app`.
 
 ## Como funciona
 
@@ -129,6 +155,7 @@ pelo botão "Atualizar lista".
 - Lista dos últimos domínios bloqueados
 - Toque num domínio bloqueado para **liberá-lo** (útil se algum app quebrar)
 - Funciona na **Android TV / Google TV**, com navegação pelo controle remoto
+- Fica ligado em segundo plano e **religa sozinho** quando o aparelho liga
 - Compatível com "VPN sempre ativa" do Android (Configurações > Rede > VPN > ⚙️ > Sempre ativa)
 
 ## Rodando

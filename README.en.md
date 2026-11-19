@@ -50,6 +50,13 @@ On the TV, press **OK** on the highlighted power button and accept the VPN promp
 says it has no VPN permission screen, run once from a computer:
 `adb shell appops set com.adblocker ACTIVATE_VPN allow`.
 
+## Always on, in the background
+
+Turn it on **once**: it keeps running in the background as a foreground service, and it turns
+itself back on when the phone or TV boots (and after an app update) if it was on. For extra
+safety enable **Always-on VPN** (phone: Settings > Network > VPN > ⚙️ > Always-on VPN; TV via
+adb: `adb shell settings put secure always_on_vpn_app com.adblocker`).
+
 ## How it works
 
 The app creates a **local VPN** (nothing leaves your phone through it). This VPN only captures

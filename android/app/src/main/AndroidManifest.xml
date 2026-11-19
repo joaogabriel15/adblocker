@@ -1,6 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Manter o bloqueio rodando em segundo plano e religar quando o aparelho liga. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- Android TV: o app também roda em TVs, que não têm tela de toque. -->
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
@@ -33,11 +37,22 @@
       <service
         android:name=".vpn.AdBlockVpnService"
         android:permission="android.permission.BIND_VPN_SERVICE"
+        android:foregroundServiceType="systemExempted"
         android:exported="false">
         <intent-filter>
             <action android:name="android.net.VpnService" />
         </intent-filter>
         <meta-data android:name="android.net.VpnService.SUPPORTS_ALWAYS_ON" android:value="true" />
       </service>
+      <receiver
+        android:name=".vpn.BootReceiver"
+        android:directBootAware="false"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.BOOT_COMPLETED" />
+            <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+        </intent-filter>
+      </receiver>
     </application>
 </manifest>

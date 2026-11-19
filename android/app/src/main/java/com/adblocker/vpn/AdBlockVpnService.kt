@@ -1,9 +1,17 @@
 package com.adblocker.vpn
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.net.VpnService
+import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.util.Log
+import androidx.core.app.NotificationCompat
+import com.adblocker.R
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.net.DatagramPacket
@@ -35,6 +43,27 @@ class AdBlockVpnService : VpnService() {
         val blockedCount = AtomicLong(0)
         val totalCount = AtomicLong(0)
         val recentBlocked = ConcurrentLinkedDeque<String>()
+
+        private const val PREFS = "adblock_prefs"
+        private const val KEY_ENABLED = "vpn_enabled"
+        private const val CHANNEL_ID = "adblock_vpn"
+        private const val NOTIFICATION_ID = 1
+
+        /** Se o usuário deixou o bloqueio ligado. Usado para religar sozinho quando o aparelho liga. */
+        fun isEnabled(ctx: Context) =
+            ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_ENABLED, false)
+
+        fun setEnabled(ctx: Context, enabled: Boolean) {
+            ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .putBoolean(KEY_ENABLED, enabled).apply()
+        }
+
+        /** Inicia o serviço em primeiro plano (funciona também a partir do boot). */
+        fun start(ctx: Context) {
+            val intent = Intent(ctx, AdBlockVpnService::class.java).setAction(ACTION_START)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) ctx.startForegroundService(intent)
+            else ctx.startService(intent)
+        }
     }
 
     private var tun: ParcelFileDescriptor? = null
@@ -43,12 +72,22 @@ class AdBlockVpnService : VpnService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) {
+            setEnabled(this, false)
             stopVpn()
+            stopForegroundCompat()
             stopSelf()
             return START_NOT_STICKY
         }
         // ACTION_START, ou intent nulo/SERVICE_INTERFACE quando é "VPN sempre ativa".
+        // Serviço em primeiro plano: o sistema não fecha o bloqueio para liberar memória.
+        goForeground()
+        setEnabled(this, true)
         startVpn()
+        if (!isRunning) {
+            stopForegroundCompat()
+            stopSelf()
+            return START_NOT_STICKY
+        }
         return START_STICKY
     }
 
@@ -73,6 +112,37 @@ class AdBlockVpnService : VpnService() {
         isRunning = true
         readerThread = Thread({ loop(tun!!) }, "adblock-dns").also { it.start() }
         Log.i(TAG, "VPN iniciada com ${Blocklist.size} domínios bloqueados")
+    }
+
+    private fun goForeground() {
+        val nm = getSystemService(NotificationManager::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            nm.createNotificationChannel(
+                NotificationChannel(CHANNEL_ID, "Bloqueio ativo", NotificationManager.IMPORTANCE_MIN)
+                    .apply { setShowBadge(false) },
+            )
+        }
+        val open = packageManager.getLaunchIntentForPackage(packageName)?.let {
+            PendingIntent.getActivity(this, 0, it, PendingIntent.FLAG_IMMUTABLE)
+        }
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher_monochrome)
+            .setContentTitle("Bloqueador de Anúncios ativo")
+            .setContentText("Bloqueando anúncios em segundo plano")
+            .setContentIntent(open)
+            .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .build()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
+    }
+
+    private fun stopForegroundCompat() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) stopForeground(STOP_FOREGROUND_REMOVE)
+        else @Suppress("DEPRECATION") stopForeground(true)
     }
 
     private fun loop(fd: ParcelFileDescriptor) {
@@ -136,8 +206,10 @@ class AdBlockVpnService : VpnService() {
         readerThread = null
     }
 
-    override fun onRevoke() { // usuário desligou pela tela de VPN do Android
+    override fun onRevoke() { // usuário desligou pela tela de VPN do Android (ou outra VPN assumiu)
+        setEnabled(this, false)
         stopVpn()
+        stopForegroundCompat()
         super.onRevoke()
     }
 
